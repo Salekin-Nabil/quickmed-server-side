@@ -21,6 +21,7 @@
     "mongodb": "^6.1.0",
     "node-mailjet": "^6.0.4",
     "nodemailer": "^6.9.7",
-    "react-hook-form": "^7.47.0"
+    "react-hook-form": "^7.47.0",
+    "stripe": "^17.2.1"
   }
 }
