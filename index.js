@@ -186,6 +186,13 @@ app.get('/all_bookings', verifyJWT, verifyAdmin, async (req, res) => {
     res.send(bookings);
 });
 
+app.get('/all_bookings_for_doctor', verifyJWT, verifyDoctor, async (req, res) => {
+    const service = req.query.service;
+    const query = {service:service};
+    const bookings = await bookingsCollection.find(query).toArray();
+    res.send(bookings);
+});
+
 app.put("/user/:email", async(req,res) =>{
     const email = req.params.email;
     const user = req.body;
@@ -247,7 +254,7 @@ app.get('/users/doctor/:email', async (req, res) => {
     const email = req.params.email;
     const query = { email: email };
     const user = await doctorsCollection.findOne(query);
-    res.send({ isAdmin: user?.role === 'doctor' });
+    res.send({ isDoctor: user?.role === 'doctor' });
 });
 
 //Remove an User
@@ -313,6 +320,19 @@ app.put('/doctor/:email', async (req, res) => {
     res.send(doctors);
 });
 
+app.get('/doctors_info', verifyJWT, verifyDoctor, async (req, res) => {
+    const email = req.query.email;
+    const decodedEmail = req.decoded.email;
+
+    if (email !== decodedEmail) {
+        return res.status(403).send({ message: 'forbidden access' });
+    }
+
+    const query = { email: email };
+    const userInfo = await doctorsCollection.find(query).toArray();
+    res.send(userInfo);
+});
+
 //Payment POST API
 app.post('/create-payment-intent', verifyJWT, async(req, res) =>{
     const booking = req.body;
@@ -346,6 +366,19 @@ app.post('/create-payment-intent', verifyJWT, async(req, res) =>{
       }
     }
     const result = await paymentCollection.insertOne(payment);
+    const updatedBooking = await bookingsCollection.updateOne(filter, updatedDoc);
+    res.send(updatedBooking);
+  });
+
+  //Accept Appointment API
+  app.patch('/bookings_accepted/:id', verifyJWT, verifyDoctor, async(req, res) =>{
+    const id  = req.params.id;
+    const filter = {_id: new ObjectId(id)};
+    const updatedDoc = {
+      $set: {
+        status: "accepted",
+      }
+    }
     const updatedBooking = await bookingsCollection.updateOne(filter, updatedDoc);
     res.send(updatedBooking);
   });
