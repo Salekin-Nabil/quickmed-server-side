@@ -55,6 +55,7 @@ async function run() {
     const usersCollection = client.db('quick_med').collection('users');
     const doctorsCollection = client.db('quick_med').collection('doctors');
     const paymentCollection = client.db('quick_med').collection('payment');
+    // const callCollection = client.db('quick_med').collection('call');
 
     const verifyAdmin = async (req, res, next) => {
         const decodedEmail = req.decoded.email;
@@ -84,6 +85,39 @@ async function run() {
         const services = await cursor.toArray();
         res.send(services);
     });
+
+    // app.get('/calls', async(req,res)=>{
+    //     const query = {};
+    //     const cursor = callCollection.find(query);
+    //     const services = await cursor.toArray();
+    //     res.send(services);
+    // });
+
+    app.put('/bookings/calls/started/:appointmentID', async (req, res) => {
+        const appointmentID = req.params.appointmentID;
+        const filter = { _id: new ObjectId(appointmentID) };
+        const options = { upsert: true };
+        const updateDoc = {
+          $set: {
+            status: 'ongoing'
+        },
+        };
+        const result = await bookingsCollection.updateOne(filter, updateDoc, options);
+        res.send({ result });
+      });
+
+    app.put('/bookings/calls/ended/:appointmentID', async (req, res) => {
+        const appointmentID = req.params.appointmentID;
+        const filter = { _id: new ObjectId(appointmentID) };
+        const options = { upsert: true };
+        const updateDoc = {
+          $set: {
+            status: 'completed'
+        },
+        };
+        const result = await bookingsCollection.updateOne(filter, updateDoc, options);
+        res.send({ result });
+      });
 
   app.post('/bookings', async (req, res) => {
     const booking = req.body;
@@ -241,12 +275,42 @@ app.put('/doctor/admin/:email', verifyJWT, verifyAdmin, async (req, res) => {
     res.send(result);
 });
 
+// app.put('/users/profile_creation/:email', async (req, res) => {
+//     const email = req.params.email;
+//     // const filter = { _id: ObjectId(id) }
+//     const filter = { email: email };
+//     const options = { upsert: true };
+//     const updatedDoc = {
+//         $set: {
+//             profileCreated: True
+//         }
+//     }
+//     const result = await usersCollection.updateOne(filter, updatedDoc, options);
+//     res.send(result);
+// });
+
 //Routing as an Admin
 app.get('/users/admin/:email', async (req, res) => {
     const email = req.params.email;
     const query = { email: email };
     const user = await usersCollection.findOne(query);
     res.send({ isAdmin: user?.role === 'admin' });
+});
+
+//Finding a User by Email
+app.get('/users/:email', async (req, res) => {
+    const email = req.params.email;
+    const query = { email: email };
+    const user = await usersCollection.findOne(query);
+    res.send(user);
+});
+
+//Finding a User by ID
+app.get('/users/id/:id', async (req, res) => {
+  const id = req.params.id;
+  const query = {_id: new ObjectId(id)};
+    const user = await usersCollection.findOne(query);
+    res.send(user);
 });
 
 //Routing as a Doctor
@@ -284,6 +348,32 @@ app.put('/reviews/:email', async (req, res) => {
     };
     const result = await reviewCollection.updateOne(filter, updateDoc, options);
     res.send({ result });
+  });
+
+//Get Wallet Address GET API
+app.get('/users/wallet/:email', verifyJWT, verifyDoctor, async (req, res) => {
+    const email = req.params.email;
+    const query = { email: email };
+    const user = await usersCollection.findOne(query);
+    console.log("Wallet: ", user.data.walletAddress);
+    res.send(user.data);
+  });
+
+//Inserting Wallet Address PUT API
+app.put('/users/wallet/:email', async (req, res) => {
+    const email = req.params.email;
+    const data = req.body;
+    console.log("Data: ", data);
+    const filter = { email: email };
+    const options = { upsert: true };
+    const updatedDoc = {
+        $set: {
+            profileCreated: "True",
+            data
+        }
+    }
+    const result = await usersCollection.updateOne(filter, updatedDoc, options);
+    res.send(result);
   });
 
 //New application for being a doctor
