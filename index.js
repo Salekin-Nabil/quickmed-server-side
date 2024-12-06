@@ -444,7 +444,7 @@ app.post('/create-payment-intent', verifyJWT, async(req, res) =>{
     res.send(booking);
   });
 
-  //Payment confirmation PATH API
+  //Payment confirmation PATCH API
   app.patch('/bookings/:id', verifyJWT, async(req, res) =>{
     const id  = req.params.id;
     const payment = req.body;
@@ -453,6 +453,22 @@ app.post('/create-payment-intent', verifyJWT, async(req, res) =>{
       $set: {
         status: "pending",
         transactionId: payment.transactionId
+      }
+    }
+    const result = await paymentCollection.insertOne(payment);
+    const updatedBooking = await bookingsCollection.updateOne(filter, updatedDoc);
+    res.send(updatedBooking);
+  });
+
+  //Crypto payment confirmation PATCH API
+  app.patch('/bookings/crypto/:id', verifyJWT, async(req, res) =>{
+    const id  = req.params.id;
+    const payment = req.body;
+    const filter = {_id: new ObjectId(id)};
+    const updatedDoc = {
+      $set: {
+        status: "pending",
+        transactionId: payment.transactionID
       }
     }
     const result = await paymentCollection.insertOne(payment);
