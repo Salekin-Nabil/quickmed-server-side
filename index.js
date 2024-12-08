@@ -468,10 +468,34 @@ app.post('/create-payment-intent', verifyJWT, async(req, res) =>{
     const updatedDoc = {
       $set: {
         status: "pending",
-        transactionId: payment.transactionID
+        transactionId: payment.transactionId,
+        crypto: "yes"
       }
     }
     const result = await paymentCollection.insertOne(payment);
+    const updatedBooking = await bookingsCollection.updateOne(filter, updatedDoc);
+    res.send(updatedBooking);
+  });
+  
+  //Crypto payment refund DELETE API
+  app.delete('/bookings/crypto/refund/:id', verifyJWT, async(req, res) =>{
+    const id = req.params.id;
+    const query = { order: id };
+    const result = await paymentCollection.deleteOne(query);
+    res.send(result);
+  });
+
+  //Crypto payment refund PATCH API
+  app.patch('/bookings/crypto/refund/:id', verifyJWT, async(req, res) =>{
+    const id = req.params.id;
+    const filter = {_id: new ObjectId(id)};
+    const updatedDoc = {
+      $set: {
+        status: "unpaid",
+        transactionId: "",
+        crypto: ""
+      }
+    }
     const updatedBooking = await bookingsCollection.updateOne(filter, updatedDoc);
     res.send(updatedBooking);
   });
